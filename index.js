@@ -101,7 +101,7 @@ function viewAllDept() {
 }
 
 function viewAllRoles() {
-  const request = `SELECT * FROM role;`;
+  const request = `SELECT role.title, role.id, dept_tbl.dept_name, role.salary FROM role JOIN dept_tbl ON role.dept_id = dept_tbl.id;`;
   console.log("Here is your table:");
   db.query(request, (err, res) => {
     if (err) throw err;
@@ -111,7 +111,10 @@ function viewAllRoles() {
 }
 
 function viewAllEmployees() {
-  const request = `SELECT * FROM person`;
+  const request = `SELECT p.id, p.first_name, p.last_name, r.title, d.dept_name, r.salary, CONCAT(m.first_name, ' ', m.last_name) AS manager FROM person p
+  LEFT JOIN role r ON p.role_id = r.id
+  LEFT JOIN dept_tbl d ON r.dept_id = d.id
+  LEFT JOIN person m ON p.manager_id = m.id`;
   console.log("Here is your table:");
   db.query(request, (err, res) => {
     if (err) throw err;
@@ -145,7 +148,6 @@ function addRole() {
   const sql = "SELECT * FROM dept_tbl";
   db.query(sql, (err, res) => {
     if (err) throw err;
-  
   inquirer
     .prompt(
       [{
@@ -162,20 +164,19 @@ function addRole() {
       },
       {
         type: "list",
-        name: "dept_id",
+        name: "dept",
         message: "Please choose the the department for this role",
-        choices: res.map((dept_id) => dept_id.dept_name),
+        choices: res.map(obj => obj.dept_name),
       },
     ])
     .then((answers) => {
-      const dept_id = res.find((dept_id) => dept_id.name === answers.dept_id);
-      const request = `INSERT INTO role SET ?`;
-      db.query(
-        request,
+      const dept_id = res.find(obj => obj.name === answers.dept).id;//! fix
+      const request = "INSERT INTO role SET ?";
+      db.query(request,
         {
           title: answers.title,
           salary: answers.salary,
-          dept_id: dept_id,
+          dept_id: dept_id, 
         },
         (err, res) => {
           if (err) throw err;
@@ -189,40 +190,88 @@ function addRole() {
 });
 };
 
+
+function addEmployee(){
+    const sql = "SELECT id, title FROM role";
+    db.query(sql, (err, res) => {
+      if (err) throw err;
+
+      const role = res.map(({id, title}) => ({
+        name: title,
+        value: id,
+      }));// ! review
+
+    const sql2 = 'SELECT id, CONCAT(first_name, " ", last_name) AS name FROM person';
+
+    db.query(sql2, (err, res) => {
+        if (err) throw err;
+        const managers = res.map(({id, name}) =>({
+            name, 
+            value: id,
+        }));
+    //! ended here 
+    inquirer
+      .prompt(
+        [{
+          type: "input",
+          name: "firstName",
+          message: "Please enter the first name of the new employee:",
+          validate: validateInput,
+        },
+        {
+          type: "input",
+          name: "lastName",
+          message: "Please enter the last name of the new employee:",
+          validate: validateInput,
+        },
+        {
+            type: "list",
+            name: "roleID",
+            message: "Please choose the role for this ",
+            choices: role,
+          },
+        {
+          type: "list",
+          name: "managerID",
+          message: "Please choose a manager for this employee",
+          choices: [{name: "none", value: null}, ...managers,],
+        },
+      ])
+      .then((answers) => {
+        const request = `INSERT INTO person (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)`;
+
+        const values = [answers.firstName, answers.lastName, answers.roleID, answers.managerID,];
+
+        db.query(
+          request,
+          values,
+          (err, res) => {
+            if (err) throw err;
+            console.log(
+              `the employee '${answers.firstName + ' ' + answers.lastName}' has been added to the database`
+            );
+            start();
+          }
+        );
+      });
+    });
+  });
+}
+
 // validate text inputs
 function validateInput(answer) {
-  if (answer.trim() !== "" && answer.trim().length <= 30) {
+  if ((answer.trim() !== "") && (answer.trim().length <= 30)) {
     return true;
   }
   return "invalid answer. Try again";
 };
 
+//! fix
 function validateNum(answer) {
-  if(answer.trim() !== "") //&& typeof answer === 'number')
+  if((answer.trim() !== "") && (isNaN(answer) === false) && (answer.trim().length <= 9))
   {
     return true;
   }
-  return "Please enter the raw numeric value without any commas, periods, or $";
+  return "Please enter the raw numeric value(1-999999999) without any commas, periods, or $";
 };
-//    function addRole(){
-//     const req = 'SELECT * FROM dept_tbl';
-//     db.query(req, (err, res) =>{
-//        if(err){
-//            console.log(err);
-//        }else{
-//           inquirer.prompt({
-//             type: 'input',
-//             name: 'dept_name',
-//             message: 'Please enter the name of the new department:'
-//           }).then((answer) => {
-//             console.log(answer.dept_name);
-//             const req = `INSERT INTO dept_tbl (dept_name) VALUES ('${answer.dept_name}')`;
-//             db.req(req, (err, res) => {
-//                 if(err) throw err;
-//                 console.log(`the department of '${answer.dept_name}' has been added to the database`);
-//             })
-//           })
-//        }
-//        start();
-//     })
-//    };
+
