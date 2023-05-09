@@ -148,6 +148,10 @@ function addRole() {
   const sql = "SELECT * FROM dept_tbl";
   db.query(sql, (err, res) => {
     if (err) throw err;
+    const departments = res.map(({id, dept_name}) => ({
+        name: dept_name,
+        value: id,
+      }));
   inquirer
     .prompt(
       [{
@@ -166,17 +170,16 @@ function addRole() {
         type: "list",
         name: "dept",
         message: "Please choose the the department for this role",
-        choices: res.map(obj => obj.dept_name),
+        choices: departments,
       },
     ])
     .then((answers) => {
-      const dept_id = res.find(obj => obj.name === answers.dept).id;//! fix
       const request = "INSERT INTO role SET ?";
       db.query(request,
         {
           title: answers.title,
           salary: answers.salary,
-          dept_id: dept_id, 
+          dept_id: answers.dept, 
         },
         (err, res) => {
           if (err) throw err;
@@ -209,7 +212,6 @@ function addEmployee(){
             name, 
             value: id,
         }));
-    //! ended here 
     inquirer
       .prompt(
         [{
