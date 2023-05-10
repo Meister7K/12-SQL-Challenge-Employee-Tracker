@@ -74,19 +74,6 @@ function start() {
           db.end();
       }
     });
-  // view all depts
-  //     db.query(
-  //         `SELECT * FROM dept_tbl ORDER BY dept_name ASC`
-  //  )
-
-  // view all roles
-  //view all people
-  // add a dept
-  // add a role
-  //add a person
-  //update person info
-  //view employee by role
-  //view employee by dept
 }
 
 // functions
@@ -315,7 +302,7 @@ function validateInput(answer) {
   return "invalid answer. Try again";
 };
 
-//! fix
+
 function validateNum(answer) {
   if((answer.trim() !== "") && (isNaN(answer) === false) && (answer.trim().length <= 9))
   {
