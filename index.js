@@ -34,7 +34,7 @@ function start() {
         "Add a department",
         "Add a role",
         "Add an employee",
-        "Update employee info",
+        "Update employee role",
         "View employee by department",
         "View employee by role",
         "Quit",
@@ -60,7 +60,7 @@ function start() {
         case "Add an employee":
           addEmployee();
           break;
-        case "Update employee info":
+        case "Update employee role":
           updateEmployee();
           break;
         case "View employee by department":
@@ -132,7 +132,6 @@ function addDept() {
       validate: validateInput,
     })
     .then((answer) => {
-      //console.log(answer.dept_name);
       const request = `INSERT INTO dept_tbl (dept_name) VALUES ("${answer.dept_name}");`;
       db.query(request, (err, res) => {
         if (err) throw err;
@@ -192,7 +191,6 @@ function addRole() {
     });
 });
 };
-
 
 function addEmployee(){
     const sql = "SELECT id, title FROM role";
@@ -259,6 +257,54 @@ function addEmployee(){
     });
   });
 }
+
+function updateEmployee(){
+    const sql = "SELECT * FROM person";
+    const sql2 = "SELECT * FROM role";
+    const sql3 = 'SELECT id, CONCAT(first_name, " ", last_name) AS name FROM person';
+
+    db.query(sql, (err, res1) =>{
+        if(err) throw err;
+        db.query(sql2, (err, res2) =>{
+            if(err) throw err; 
+            db.query(sql3, (err,res3) => {
+                if(err) throw err;
+                const managers = res3.map(({id, name}) =>({
+                    name, 
+                    value: id,}));
+                    
+                inquirer.prompt([{
+                    type: 'list',
+                    name: 'employee',
+                    message: "Select the employee you'd like to update:",
+                    choices: res1.map((person) => `${person.first_name} ${person.last_name}`),
+                },{
+                    type: 'list',
+                    name: 'newRole',
+                    message: 'Select role:',
+                    choices: res2.map((role) => role.title),
+                }, {
+                    type: "list",
+                    name: "managerID",
+                    message: "Please choose a manager for this employee",
+                    choices: [{name: "none", value: null}, ...managers,],
+                  },
+                ]).then((answers) =>{
+                    const employee = res1.find((person) => `${person.first_name} ${person.last_name}` === answers.employee);
+
+                    const newRole = res2.find((role) => role.title === answers.newRole);
+
+                    const request = 'UPDATE person SET role_id = ? WHERE id = ?';
+                    db.query(request, [newRole.id, employee.id, answers.managerID], (err, res) => {
+                        if(err) throw err;
+                        console.log(`Updated ${employee.first_name} ${employee.last_name} with the role of ${newRole.title}`);
+                        start();
+                })
+            })
+        })})
+    })
+
+};
 
 // validate text inputs
 function validateInput(answer) {
