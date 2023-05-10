@@ -273,6 +273,7 @@ function updateEmployee(){
                     name, 
                     value: id,}));
                     
+
                 inquirer.prompt([{
                     type: 'list',
                     name: 'employee',
@@ -294,8 +295,8 @@ function updateEmployee(){
 
                     const newRole = res2.find((role) => role.title === answers.newRole);
 
-                    const request = 'UPDATE person SET role_id = ? WHERE id = ?';
-                    db.query(request, [newRole.id, employee.id, answers.managerID], (err, res) => {
+                    const request = 'UPDATE person SET role_id = ?, manager_id = ? WHERE id = ?';
+                    db.query(request, [newRole.id, answers.managerID, employee.id], (err, res) => {
                         if(err) throw err;
                         console.log(`Updated ${employee.first_name} ${employee.last_name} with the role of ${newRole.title}`);
                         start();
